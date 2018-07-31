@@ -1,7 +1,5 @@
 
 
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(shiny,shinydashboard, sqldf, matrixStats, gplots, ggplot2, colorRamps,rms,devtools,fields)
 
 
 #Databases
@@ -18,10 +16,6 @@ if(file.exists("Mar16_BRCA_TCGA.sqlite")) {
   print(paste0("Database directory assisgned to ",getwd(),"."))
 }
 
-
-
-
-# AS OF 3 21 2016 need Development version of DT
 
 # Define server logic
 shinyServer(function(input, output,session) {
@@ -46,6 +40,139 @@ table.select<-reactive({
   return(table)
 
 })
+
+output$menu <- renderMenu({
+  
+  if(input$variant == "No" || is.null(input$variant))  {
+    sidebarMenu(id="tabs",
+      menuItem("Tutorial",tabName="tutorial",icon=icon("support")),
+      menuItem("Data Set",tabName="datasetSelect",icon=icon("dashboard"),selected=TRUE),
+      menuItem("Select Gene",tabName="GeneTable",icon=icon("share-alt")),
+      menuItem("Single Gene Plots",tabName="Plots1",icon=icon("area-chart")),
+      menuItem("App Reset",tabName="reset",icon=icon("bomb")) 
+  )} else if(input$variant == "Yes")
+  {
+    sidebarMenu(id="tabs",
+      menuItem("Tutorial",tabName="tutorial",icon=icon("support")),
+      menuItem("Data Set",tabName="datasetSelect",icon=icon("dashboard"),selected=TRUE),
+      menuItem("Select Gene",tabName="GeneTable",icon=icon("share-alt")),
+      menuItem("Single Gene Plots",tabName="Plots1",icon=icon("area-chart")),
+      menuItem("Variant Plots",tabName="testme",icon=icon("cogs")),
+      menuItem("App Reset",tabName="reset",icon=icon("bomb")) 
+  )} else if(input$variant == "Yes2")
+  {
+  sidebarMenu(id="tabs",
+    menuItem("Tutorial",tabName="tutorial",icon=icon("support")),
+    menuItem("Data Set",tabName="datasetSelect",icon=icon("dashboard"),selected=TRUE),
+    menuItem("Select Gene",tabName="GeneTable",icon=icon("share-alt")),
+    menuItem("Single Gene Plots",tabName="Plots1",icon=icon("area-chart")),
+    menuItem("Variant Plots",tabName="Plots2",icon=icon("modx")),
+    menuItem("App Reset",tabName="reset",icon=icon("bomb")) 
+  )}
+
+
+})
+
+output$bodydyn <- renderUI({
+ 
+    tabItems(
+      tabItem(tabName = "testme",
+              h2("Variant (as Yes/No) vs Copy Number Plots"),
+              box(uiOutput("VariantPlots3"),width=6),
+              box(uiOutput("VariantPlots4"),width=6),
+              box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar3"),status="danger",solidHeader = TRUE),
+              box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar4"),status="primary",solidHeader = TRUE)
+              ),
+      tabItem(tabName="reset",
+              h2("Resetting..."),
+              box(title="Please wait.")
+              ),
+      tabItem(tabName="datasetSelect",
+              class="active",
+              h2("Select Your Dataset"),
+              fluidRow(
+                box(selectInput('database1','Select From',choices=list("Metastatic Skin Cutaneous Melanoma"='SKCM',"Breast Invasive Carcinoma"='BRCA'),selected='SKCM'),solidHeader = T, width=6, status="primary"),
+                box(selectInput('variant','Include Variant Information?', choices=list("Yes- Present/Absent"='Yes',"Yes- Factors"='Yes2',"No"='No'),selected='No'),solidHeader = T, width = 6, status="primary")
+              ),
+              fluidRow(
+                box(selectInput('cna.input','Select Copy Number Flavour', choices=list("Gistic"='Gistic',"Gene Segment Variants"='CNA'),selected='CNA'),solidHeader = T, width=6,status="primary"),
+                box(selectInput('lm.type','Select the association model', choices=list("Relative Importance"='relimp',"Correlation"='cor'),selected='relimp'),solidHeader = T, width=6, status="primary")
+              ),
+              fluidRow(
+                box(title="Database Information",solidHeader=T,collapsed=T,status="info",textOutput("db.out"))
+              )
+      ),
+      tabItem(tabName="tutorial",
+              includeMarkdown("instructions.md")
+              
+      ),
+      tabItem(tabName="GeneTable",
+              h4("Gene Table"),
+              fluidRow(
+                box(
+                  title = "Help", width = 8, solidHeader = TRUE, status = "warning", collapsed = T, collapsible = T,
+                  "The table below displays the Amount of Variation Explained in % by a Linear model of RNAseq = Copy Number + Methylation + Genetic Variant. Each of these columns can be sorted and a gene of interest can be entered #in the search box. If there were more than one Methylation sites in a given gene, only the site that explained the most variance is below. The other sites can be queried on the Single Gene Plots Tab"
+                ),
+                box(title="Data Status",textOutput("Test"),status="info",solidHeader=T,collapsed=T, width=4)
+              ),
+              
+              box(title="Select Gene of Interest", solidHeader=TRUE, width=8,withSpinner(DT::dataTableOutput("resultsGENE"),type=6))
+              
+              
+      ),
+      tabItem(tabName = "Plots2",
+              h4("Variant (as a Factor) vs Copy Number Plots"),
+              box(uiOutput("VariantPlots1"),width=6),
+              box(uiOutput("VariantPlots2"),width=6),
+              box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar1"),status="danger",solidHeader = TRUE),
+              box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar2"),status="primary",solidHeader = TRUE),
+              box(title="Variance Explained by Mutation Type",withSpinner(DT::dataTableOutput("VarTable"),type=6), solidHeader=TRUE, width=12)
+      ),
+       tabItem(tabName="Plots1",
+              h4("Single Gene Plots"),
+              box(title="Select Methylation Site",withSpinner(DT::dataTableOutput("methTable"),type=6),collapsible = T,collapsed = F,width=10),
+              fluidRow(
+                column(10,offset=1,
+                       box(title="Methylation vs Copy Number coloured by Expression",plotOutput("Scatter", height = 600, width = 600),status="primary",solidHeader = T,collapsible=T,width=8)
+                )),
+              fluidRow(
+                box(title="Methylation vs Expression",width=5,plotOutput("ScatterMethGG", height = 400, width = 400),status="danger",collapsible=T,solidHeader = T),
+                box(title="Expression vs Copy Number", width=5,plotOutput("ScatterCN", height = 400, width = 400), status="warning",collapsible=T,solidHeader=T)
+              )
+      )
+      
+    )
+  
+})
+
+
+
+##### 
+# Bookmarking for reset
+setBookmarkExclude(c("resultsGENE", "resultsGENE_rows_all","resultsGENE_rows_current","resultsGENE_cell_clicked","methTable_rows_all","methTable_cell_clicked","methTable_rows_current","methTable_rows_selected"))
+onBookmarked(function(url) {
+  updateQueryString(url)
+})
+
+onRestore(function(url) {
+  tmp.in<-url
+  updateSelectInput(session,"lm.type",selected=tmp.in$input$lm.type)
+  updateSelectInput(session,"database1",selected=tmp.in$input$database1)
+  updateSelectInput(session,"variant",selected=tmp.in$input$variant)
+  updateSelectInput(session,"cna.input",selected=tmp.in$input$cna.input)
+})
+
+observeEvent(input$reset_button, {js$reset()})
+
+observeEvent(input$tabs, {
+  
+  session$doBookmark()
+  if(input$tabs=="reset"){
+    print("Database Reset")
+    js$refresh()
+  }
+ 
+},ignoreNULL = TRUE, ignoreInit = TRUE)
 
 GT<-reactive({
   genes.table<-dbReadTable(db1.select(),table.select()$gene)
@@ -146,7 +273,7 @@ plot1.data <- reactive({
 
 
   if(input$lm.type=='cor'){
-  print("I'm in!")
+  
     meth.table<-cbind(meth.table[meth.rows,c(2,3)],tmp.Meth450$location,meth.table[meth.rows,c(4:6)])
     colnames(meth.table)<-c("Symbol(s)","Meth Site","Location", "Copy Number", "Methylation", "Variants")
     meth.table$`Copy Number`<-round(as.numeric(meth.table$`Copy Number`)*100,2)
@@ -192,23 +319,26 @@ plot1.data <- reactive({
 output$resultsGENE <- DT::renderDataTable({
   DT::datatable(GT.plotting(),
                 selection=list(mode='single', selected=which.max(GT.plotting()$Methylation)),
-                options = list(pageLength = 20, lengthMenu=c(10,20,50,100), searching = T, sorting = T, order=list(3,'desc'))
+                options = list(pageLength = 10, lengthMenu=c(10,20,50,100), searching = T, sorting = T, order=list(3,'desc'))
           )})
 
 output$methTable<-DT::renderDataTable({
   DT::datatable(as.data.frame(plot1.data()$Meth.Table),
                 selection=list(mode='single', selected=which.max(plot1.data()$Meth.Table[,5])),
-                options = list(pageLength = 20, searching = F, sorting = T, lengthMenu=c(10,20,30),order=list(5,'desc'))
+                options = list(pageLength = 10, searching = F, sorting = T, lengthMenu=c(10,20,30),order=list(5,'desc'))
   )})
 
 output$VarTable<-DT::renderDataTable({
+  if(input$variant == "Yes") {
+    return(NULL) 
+    } else {
+  
   search.me<-c("Symbol","Variants",VPlotChoices())
   data<-GT()[plot1.data()$GeneRow,]
   dataTable<-data[1,names(data) %in% search.me]
-  DT::datatable(dataTable,
-                selection=list(mode='single'),
-                options = list(pageLength = 1, searching = F, sorting = F, lengthMenu=c(10,20,30),order=list(5,'desc'))
-  )})
+  DT::datatable(dataTable,options = list(searching = F, sorting = F, pageLength=1))
+            }
+  })
 
 output$Test<-renderText({
   paste0("Plot data generated for ",plot1.data()$GeneName)
@@ -224,7 +354,7 @@ scatterhist(gistic.plot, plot1.data()$Meth450[input$methTable_rows_selected,-c(1
 zr=range(plot1.data()$RNAseq)
 image.plot(legend.only=T, col= greenred(length(plot1.data()$RNAseq)) , zlim= zr, horizontal=T, smallplot= c(0,0.9,0,0.03),legend.lab="expression", legend.cex=0.75)
 
-},height=800)
+})
 
 
 output$ScatterCN <- renderPlot({
@@ -299,12 +429,70 @@ output$ScatterVar2<-renderPlot({
   plot(g)
 })
 
+output$ScatterVar3<-renderPlot({
+  var.tmp<-plot1.data()$Variant
+  var.tmp<-var.tmp[rownames(var.tmp) %in% input$VP3 ,,drop=FALSE]
+  if(!is.null(dim(var.tmp))) {
+    if(dim(var.tmp)[1]>1){
+      var.tmp<-colSums(var.tmp)# Nested to check for existance first!
+      var.tmp<-t(var.tmp)
+    }
+  }
+  
+  if(length(var.tmp)==0) var.tmp<-matrix(data=rep(0,length(plot1.data()$RNAseq)),nrow=1)
+  if(!is.null(input$VP3)) var.tmp[var.tmp>=1]<-2 # Remove absolute counts for indication of presense or absense
+  
+  gistic.data<-plot1.data()$Gistic
+  set.seed(293939)
+  if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
+  
+  data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
+  colnames(data)<-c("RNAseq","CN","Variant")
+  data<-as.data.frame(data)
+  # Plot Here
+  g<-CN.plot(data,plot1.data()$GeneName)
+  plot(g)
+})
+
+output$ScatterVar4<-renderPlot({
+  var.tmp<-plot1.data()$Variant
+  var.tmp<-var.tmp[rownames(var.tmp) %in% input$VP4 ,,drop=FALSE]
+  if(!is.null(dim(var.tmp))) {
+    if(dim(var.tmp)[1]>1){
+      var.tmp<-colSums(var.tmp)# Nested to check for existance first!
+      var.tmp<-t(var.tmp)
+    }
+  }
+  
+  if(length(var.tmp)==0) var.tmp<-matrix(data=rep(0,length(plot1.data()$RNAseq)),nrow=1)
+  if(!is.null(input$VP4)) var.tmp[var.tmp>=1]<-2 # Remove absolute counts for indication of presense or absense
+  
+  gistic.data<-plot1.data()$Gistic
+  set.seed(293939)
+  if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
+  
+  data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
+  colnames(data)<-c("RNAseq","CN","Variant")
+  data<-as.data.frame(data)
+  # Plot Here
+  g<-CN.plot(data,plot1.data()$GeneName)
+  plot(g)
+})
+
 output$VariantPlots1<-renderUI({
   checkboxGroupInput("VP1","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 
 output$VariantPlots2<-renderUI({
   checkboxGroupInput("VP2","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+})
+
+output$VariantPlots3<-renderUI({
+  checkboxGroupInput("VP3","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+})
+
+output$VariantPlots4<-renderUI({
+  checkboxGroupInput("VP4","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 # Function will determine which choices are available for Variant PLots.  Used twice so, a F(x)
  VPlotChoices<-reactive({
