@@ -7,7 +7,7 @@ pacman::p_load(shiny,shinydashboard, shinycssloaders, shinyjs, sqldf, matrixStat
 #
 jsResetCode <- "shinyjs.refresh = function() { location.reload(); }"
 # Split out Shiny Pieces to keep editing and updating easier
-header<-dashboardHeader(title="Multi Omics Viewer")
+header<-dashboardHeader(title="Multi Omic TranscrIptome ViEwer (MOTIVE)")
 
 sidebar<-dashboardSidebar(
   sidebarMenuOutput("menu")

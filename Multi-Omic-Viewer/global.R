@@ -195,10 +195,10 @@ scatterhist = function(x, y, xlab="", ylab="", col, pch, name){
 CN.plot<-function(data,name){
   # data has fill column
   range.out<-c(1,3)
-  if(max(data$Variant)==0) range.out<-c(1,1)
+  if(max(data$Mutations)==0) range.out<-c(1,1)
   
   
-  p<-ggplot(data,aes(y=RNAseq,x=CN))+geom_point(aes(colour = factor(Variant),size=Variant),show.legend=FALSE)+scale_size(range=range.out)+labs(y="RNAseq", x="Copy Number")+scale_colour_manual(name="",values=c("2"="darkorchid4","0"="bisque3"))+annotate("text",y=max(data$RNAseq), x=max(data$CN),label=name,hjust=1)+theme_light()+theme(panel.grid.minor=element_blank())
+  p<-ggplot(data,aes(y=RNAseq,x=CN))+geom_point(aes(colour = factor(Mutations),size=Mutations),show.legend=FALSE)+scale_size(range=range.out)+labs(y="RNAseq", x="Copy Number")+scale_colour_manual(name="",values=c("2"="darkorchid4","0"="bisque3"))+annotate("text",y=max(data$RNAseq), x=max(data$CN),label=name,hjust=1)+theme_light()+theme(panel.grid.minor=element_blank())
   return(p)
 }
 

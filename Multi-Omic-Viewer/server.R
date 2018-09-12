@@ -57,7 +57,7 @@ output$menu <- renderMenu({
       menuItem("Data Set",tabName="datasetSelect",icon=icon("dashboard"),selected=TRUE),
       menuItem("Select Gene",tabName="GeneTable",icon=icon("share-alt")),
       menuItem("Single Gene Plots",tabName="Plots1",icon=icon("area-chart")),
-      menuItem("Variant Plots",tabName="testme",icon=icon("cogs")),
+      menuItem("Mutation Plots",tabName="testme",icon=icon("cogs")),
       menuItem("App Reset",tabName="reset",icon=icon("bomb")) 
   )} else if(input$variant == "Yes2")
   {
@@ -66,7 +66,7 @@ output$menu <- renderMenu({
     menuItem("Data Set",tabName="datasetSelect",icon=icon("dashboard"),selected=TRUE),
     menuItem("Select Gene",tabName="GeneTable",icon=icon("share-alt")),
     menuItem("Single Gene Plots",tabName="Plots1",icon=icon("area-chart")),
-    menuItem("Variant Plots",tabName="Plots2",icon=icon("modx")),
+    menuItem("Mutation Plots",tabName="Plots2",icon=icon("modx")),
     menuItem("App Reset",tabName="reset",icon=icon("bomb")) 
   )}
 
@@ -77,7 +77,7 @@ output$bodydyn <- renderUI({
  
     tabItems(
       tabItem(tabName = "testme",
-              h2("Variant (as Yes/No) vs Copy Number Plots"),
+              h2("Mutations Present (as Yes/No) vs Copy Number Plots"),
               box(uiOutput("VariantPlots3"),width=6),
               box(uiOutput("VariantPlots4"),width=6),
               box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar3"),status="danger",solidHeader = TRUE),
@@ -92,10 +92,10 @@ output$bodydyn <- renderUI({
               h2("Select Your Dataset"),
               fluidRow(
                 box(selectInput('database1','Select From',choices=list("Metastatic Skin Cutaneous Melanoma"='SKCM',"Breast Invasive Carcinoma"='BRCA'),selected='SKCM'),solidHeader = T, width=6, status="primary"),
-                box(selectInput('variant','Include Variant Information?', choices=list("Yes- Present/Absent"='Yes',"Yes- Factors"='Yes2',"No"='No'),selected='No'),solidHeader = T, width = 6, status="primary")
+                box(selectInput('variant','Include Mutational Information?', choices=list("Yes- Present/Absent"='Yes',"Yes- Factors"='Yes2',"No"='No'),selected='No'),solidHeader = T, width = 6, status="primary")
               ),
               fluidRow(
-                box(selectInput('cna.input','Select Copy Number Flavour', choices=list("Gistic"='Gistic',"Gene Segment Variants"='CNA'),selected='CNA'),solidHeader = T, width=6,status="primary"),
+                box(selectInput('cna.input','Select Copy Number Flavour', choices=list("Gistic"='Gistic',"Gene Segment Mutations"='CNA'),selected='CNA'),solidHeader = T, width=6,status="primary"),
                 box(selectInput('lm.type','Select the association model', choices=list("Relative Importance"='relimp',"Correlation"='cor'),selected='relimp'),solidHeader = T, width=6, status="primary")
               ),
               fluidRow(
@@ -111,7 +111,7 @@ output$bodydyn <- renderUI({
               fluidRow(
                 box(
                   title = "Help", width = 8, solidHeader = TRUE, status = "warning", collapsed = T, collapsible = T,
-                  "The table below displays the Amount of Variation Explained in % by a Linear model of RNAseq = Copy Number + Methylation + Genetic Variant. Each of these columns can be sorted and a gene of interest can be entered #in the search box. If there were more than one Methylation sites in a given gene, only the site that explained the most variance is below. The other sites can be queried on the Single Gene Plots Tab"
+                  "The table below displays the Amount of Variation Explained in % by a Linear model of RNAseq = Copy Number + Methylation + Somatic Mutation. Each of these columns can be sorted and a gene of interest can be entered #in the search box. If there were more than one Methylation sites in a given gene, only the site that explained the most variance is below. The other sites can be queried on the Single Gene Plots Tab"
                 ),
                 box(title="Data Status",textOutput("Test"),status="info",solidHeader=T,collapsed=T, width=4)
               ),
@@ -121,7 +121,7 @@ output$bodydyn <- renderUI({
               
       ),
       tabItem(tabName = "Plots2",
-              h4("Variant (as a Factor) vs Copy Number Plots"),
+              h4("Mutations Present (as a Factor) vs Copy Number Plots"),
               box(uiOutput("VariantPlots1"),width=6),
               box(uiOutput("VariantPlots2"),width=6),
               box(title="RNAseq vs Copy Number", width=6, height=500, plotOutput("ScatterVar1"),status="danger",solidHeader = TRUE),
@@ -180,11 +180,11 @@ GT<-reactive({
   if(input$lm.type=='cor'){
      genes.table<-genes.table[,-2]
 
-     colnames(genes.table)<-c("Symbol","Meth Site", "Copy Number", "Methylation", "Variants")
+     colnames(genes.table)<-c("Symbol","Meth Site", "Copy Number", "Methylation", "Mutations")
 
      genes.table$`Copy Number`<-round(as.numeric(genes.table$`Copy Number`)*100,2)
      genes.table$Methylation<-round(as.numeric(genes.table$Methylation)*100,2)
-     genes.table$Variants<-round(as.numeric(genes.table$Variants)*100,2)
+     genes.table$Mutations<-round(as.numeric(genes.table$Mutations)*100,2)
 
      if(input$variant=="No") return(genes.table[,-6])
      return(genes.table)
@@ -199,15 +199,15 @@ GT<-reactive({
     colnames(genes.table)<-c("Symbol","Meth Site", "Total", "Copy Number", "Methylation")
   }
   if(input$variant == 'Yes'){
-  colnames(genes.table)<-c("Symbol","Meth Site", "Total", "Copy Number", "Methylation", "Variants")
-  genes.table$Variants<-round(as.numeric(genes.table$Variants)*100,2)
+  colnames(genes.table)<-c("Symbol","Meth Site", "Total", "Copy Number", "Methylation", "Mutations")
+  genes.table$Mutations<-round(as.numeric(genes.table$Mutations)*100,2)
   }
 
   if(input$variant == 'Yes2'){
-  colnames(genes.table)<-c("Symbol","Meth Site", "Total", "Copy Number", "Methylation", "Variants","Missense_Mutation","Silent","Nonsense_Mutation","Splice_Site","RNA","Frame_Shift_Ins","Frame_Shift_Del","In_Frame_Ins","In_Frame_Del","Nonstop_Mutation","Translation_Start_Site")
+  colnames(genes.table)<-c("Symbol","Meth Site", "Total", "Copy Number", "Methylation", "Mutations","Missense_Mutation","Silent","Nonsense_Mutation","Splice_Site","RNA","Frame_Shift_Ins","Frame_Shift_Del","In_Frame_Ins","In_Frame_Del","Nonstop_Mutation","Translation_Start_Site")
 
   # Scale output to make it look nice
-  genes.table$Variants<-round(as.numeric(genes.table$Variants)*100,2)
+  genes.table$Mutations<-round(as.numeric(genes.table$Mutations)*100,2)
   genes.table$Missense_Mutation<-round(as.numeric(genes.table$Missense_Mutation)*100,2)
   genes.table$Silent<-round(as.numeric(genes.table$Silent)*100,2)
   genes.table$Nonsense_Mutation<-round(as.numeric(genes.table$Nonsense_Mutation)*100,2)
@@ -275,13 +275,13 @@ plot1.data <- reactive({
   if(input$lm.type=='cor'){
   
     meth.table<-cbind(meth.table[meth.rows,c(2,3)],tmp.Meth450$location,meth.table[meth.rows,c(4:6)])
-    colnames(meth.table)<-c("Symbol(s)","Meth Site","Location", "Copy Number", "Methylation", "Variants")
+    colnames(meth.table)<-c("Symbol(s)","Meth Site","Location", "Copy Number", "Methylation", "Mutations")
     meth.table$`Copy Number`<-round(as.numeric(meth.table$`Copy Number`)*100,2)
     meth.table$Methylation<-round(as.numeric(meth.table$Methylation)*100,2)
 
     if(input$variant=='Yes' | input$variant == 'Yes2'){
     tmp.Variant<-get.Variant(u.samples,name.gene,db1.select())
-    meth.table$Variants<-round(as.numeric(meth.table$Variants)*100,2)
+    meth.table$Mutations<-round(as.numeric(meth.table$Mutations)*100,2)
     }
 
     if(input$variant=='No') {
@@ -295,8 +295,8 @@ plot1.data <- reactive({
   if(input$variant=='Yes' | input$variant == 'Yes2')  {
       meth.table<-cbind(meth.table[meth.rows,c(2,3)],tmp.Meth450$location,meth.table[meth.rows,c(4:7)])
       tmp.Variant<-get.Variant(u.samples,name.gene,db1.select())
-      colnames(meth.table)<-c("Symbol(s)","Meth Site","Location", "Total", "Copy Number", "Methylation", "Variants")
-      meth.table$Variants<-round(as.numeric(meth.table$Variants)*100,2)
+      colnames(meth.table)<-c("Symbol(s)","Meth Site","Location", "Total", "Copy Number", "Methylation", "Mutations")
+      meth.table$Mutations<-round(as.numeric(meth.table$Mutations)*100,2)
   }
 
   if(input$variant=='No'){
@@ -333,7 +333,7 @@ output$VarTable<-DT::renderDataTable({
     return(NULL) 
     } else {
   
-  search.me<-c("Symbol","Variants",VPlotChoices())
+  search.me<-c("Symbol","Mutations",VPlotChoices())
   data<-GT()[plot1.data()$GeneRow,]
   dataTable<-data[1,names(data) %in% search.me]
   DT::datatable(dataTable,options = list(searching = F, sorting = F, pageLength=1))
@@ -397,7 +397,7 @@ output$ScatterVar1<-renderPlot({
   if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
 
   data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
-  colnames(data)<-c("RNAseq","CN","Variant")
+  colnames(data)<-c("RNAseq","CN","Mutations")
   data<-as.data.frame(data)
   # Plot Here
   g<-CN.plot(data,plot1.data()$GeneName)
@@ -422,7 +422,7 @@ output$ScatterVar2<-renderPlot({
   if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
 
   data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
-  colnames(data)<-c("RNAseq","CN","Variant")
+  colnames(data)<-c("RNAseq","CN","Mutations")
   data<-as.data.frame(data)
   # Plot Here
   g<-CN.plot(data,plot1.data()$GeneName)
@@ -447,7 +447,7 @@ output$ScatterVar3<-renderPlot({
   if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
   
   data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
-  colnames(data)<-c("RNAseq","CN","Variant")
+  colnames(data)<-c("RNAseq","CN","Mutations")
   data<-as.data.frame(data)
   # Plot Here
   g<-CN.plot(data,plot1.data()$GeneName)
@@ -472,7 +472,7 @@ output$ScatterVar4<-renderPlot({
   if(input$cna.input == 'Gistic') gistic.data<-runif(length(gistic.data),-0.25,0.25)+gistic.data
   
   data<-cbind(plot1.data()$RNAseq,gistic.data,t(var.tmp))
-  colnames(data)<-c("RNAseq","CN","Variant")
+  colnames(data)<-c("RNAseq","CN","Mutations")
   data<-as.data.frame(data)
   # Plot Here
   g<-CN.plot(data,plot1.data()$GeneName)
@@ -480,19 +480,19 @@ output$ScatterVar4<-renderPlot({
 })
 
 output$VariantPlots1<-renderUI({
-  checkboxGroupInput("VP1","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+  checkboxGroupInput("VP1","Select Mutations to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 
 output$VariantPlots2<-renderUI({
-  checkboxGroupInput("VP2","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+  checkboxGroupInput("VP2","Select Mutations to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 
 output$VariantPlots3<-renderUI({
-  checkboxGroupInput("VP3","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+  checkboxGroupInput("VP3","Select Mutations to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 
 output$VariantPlots4<-renderUI({
-  checkboxGroupInput("VP4","Select Variants to Plot", choices=VPlotChoices(),inline=TRUE)
+  checkboxGroupInput("VP4","Select Mutations to Plot", choices=VPlotChoices(),inline=TRUE)
 })
 # Function will determine which choices are available for Variant PLots.  Used twice so, a F(x)
  VPlotChoices<-reactive({
@@ -500,7 +500,7 @@ output$VariantPlots4<-renderUI({
    if(is.null(plot1.data()$Variant)) {
      choices=c("Not Available with Current Selections")
      return(choices)} #Short circuit F(x) if no Variant Info Available
-  tmp.choice<-plot1.data()$Variant[-12,] # Remove All Variants as this is handled through checkboxes
+  tmp.choice<-plot1.data()$Variant[-12,] # Remove All Mutations as this is handled through checkboxes
 
    choices<- rownames(tmp.choice)[rowSums(tmp.choice)>0]
 
